@@ -15,7 +15,7 @@ type Controller struct {
 
 func (c *Controller) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		c.notFound(w)
 		return
 	}
 
@@ -26,21 +26,19 @@ func (c *Controller) home(w http.ResponseWriter, r *http.Request) {
 	}
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		c.errLog.Print(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		c.serverError(w, err)
 		return
 	}
 	err = ts.ExecuteTemplate(w, "base", nil)
 	if err != nil {
-		log.Print(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		c.serverError(w, err)
 	}
 }
 
 func (c *Controller) snippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil {
-		http.NotFound(w, r)
+		c.notFound(w)
 		return
 	}
 	message := fmt.Sprintf("Display snippet with ID %d", id)
@@ -50,7 +48,7 @@ func (c *Controller) snippetView(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		c.clientError(w, http.StatusMethodNotAllowed)
 		return
 	}
 	w.Write([]byte("Create a specific snippet..."))

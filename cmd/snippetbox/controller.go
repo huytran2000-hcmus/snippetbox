@@ -8,7 +8,12 @@ import (
 	"strconv"
 )
 
-func home(w http.ResponseWriter, r *http.Request) {
+type Controller struct {
+	infoLog *log.Logger
+	errLog  *log.Logger
+}
+
+func (c *Controller) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -21,7 +26,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	}
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		log.Print(err.Error())
+		c.errLog.Print(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -32,7 +37,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func snippetView(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) snippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil {
 		http.NotFound(w, r)
@@ -42,7 +47,7 @@ func snippetView(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(message))
 }
 
-func snippetCreate(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

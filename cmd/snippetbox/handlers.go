@@ -8,14 +8,14 @@ import (
 	"strconv"
 )
 
-type Controller struct {
+type Application struct {
 	infoLog *log.Logger
 	errLog  *log.Logger
 }
 
-func (c *Controller) home(w http.ResponseWriter, r *http.Request) {
+func (app *Application) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		c.notFound(w)
+		app.notFound(w)
 		return
 	}
 
@@ -26,29 +26,29 @@ func (c *Controller) home(w http.ResponseWriter, r *http.Request) {
 	}
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		c.serverError(w, err)
+		app.serverError(w, err)
 		return
 	}
 	err = ts.ExecuteTemplate(w, "base", nil)
 	if err != nil {
-		c.serverError(w, err)
+		app.serverError(w, err)
 	}
 }
 
-func (c *Controller) snippetView(w http.ResponseWriter, r *http.Request) {
+func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil {
-		c.notFound(w)
+		app.notFound(w)
 		return
 	}
 	message := fmt.Sprintf("Display snippet with ID %d", id)
 	w.Write([]byte(message))
 }
 
-func (c *Controller) snippetCreate(w http.ResponseWriter, r *http.Request) {
+func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
-		c.clientError(w, http.StatusMethodNotAllowed)
+		app.clientError(w, http.StatusMethodNotAllowed)
 		return
 	}
 	w.Write([]byte("Create a specific snippet..."))

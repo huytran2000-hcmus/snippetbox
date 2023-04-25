@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -55,9 +56,12 @@ func main() {
 func openDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("connect string is invalid: %s", err)
 	}
 
 	err = db.Ping()
-	return db, err
+	if err != nil {
+		return nil, fmt.Errorf("can't ping postgresql: %s", err)
+	}
+	return db, nil
 }

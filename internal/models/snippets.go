@@ -30,7 +30,18 @@ func (m *SnippetRepository) Insert(title string, content string, expired int) (i
 }
 
 func (m *SnippetRepository) Get(id int) (*Snippet, error) {
-	return nil, nil
+	var s Snippet
+	stmt := "SELECT id, title, content, created, expired FROM snippets WHERE expired > NOW() AND id = $1"
+	err := m.DB.QueryRow(stmt, id).Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expired)
+
+	switch err {
+	case sql.ErrNoRows:
+		return nil, ErrNoRecord
+	case nil:
+		return &s, nil
+	default:
+		return nil, fmt.Errorf("error when select a snippet: %s", err)
+	}
 }
 
 func (m *SnippetRepository) Latest() ([]*Snippet, error) {

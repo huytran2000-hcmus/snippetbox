@@ -1,10 +1,14 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
+
+	"github.com/huytran2000-hcmus/snippetbox/internal/models"
 )
 
 func (app *Application) home(w http.ResponseWriter, r *http.Request) {
@@ -35,8 +39,23 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 		return
 	}
-	message := fmt.Sprintf("Display snippet with ID %d", id)
-	w.Write([]byte(message))
+	s, err := app.snippet.Get(id)
+	if errors.Is(err, models.ErrNoRecord) {
+		app.notFound(w)
+		return
+	}
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	b, err := json.Marshal(s)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(b)
 }
 
 func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {

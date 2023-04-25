@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
 
@@ -17,20 +16,35 @@ func (app *Application) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	files := []string{
-		"./ui/html/base.gohtml",
-		"./ui/html/pages/home.gohtml",
-		"./ui/html/partials/nav.gohtml",
-	}
-	ts, err := template.ParseFiles(files...)
+	// files := []string{
+	// 	"./ui/html/base.gohtml",
+	// 	"./ui/html/pages/home.gohtml",
+	// 	"./ui/html/partials/nav.gohtml",
+	// }
+	// ts, err := template.ParseFiles(files...)
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// 	return
+	// }
+	// err = ts.ExecuteTemplate(w, "base", nil)
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// }
+
+	snippets, err := app.snippet.Latest()
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	err = ts.ExecuteTemplate(w, "base", nil)
+
+	b, err := json.Marshal(snippets)
 	if err != nil {
 		app.serverError(w, err)
+		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(b)
 }
 
 func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {

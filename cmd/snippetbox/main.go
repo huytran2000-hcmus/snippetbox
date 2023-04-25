@@ -8,14 +8,21 @@ import (
 	"os"
 	"time"
 
+	"github.com/huytran2000-hcmus/snippetbox/internal/models"
 	_ "github.com/lib/pq"
 )
+
+type Application struct {
+	infoLog *log.Logger
+	errLog  *log.Logger
+	snippet *models.SnippetRepository
+}
 
 func main() {
 	var addr string
 	var dsn string
 	flag.StringVar(&addr, "addr", ":4000", "HTTP network address")
-	flag.StringVar(&dsn, "dsn", "host=localhost port=5432 user=app_user password=huy2000 dbname=snippetbox", "Postgresql datasource name")
+	flag.StringVar(&dsn, "dsn", "host=localhost port=5432 user=app_user password=huy2000 dbname=snippetbox sslmode=require search_path=app", "Postgresql datasource name")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)

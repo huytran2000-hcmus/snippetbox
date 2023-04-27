@@ -9,8 +9,8 @@
         </div>
         <pre><code>{{range .Content | split_new_line}}{{.}}<br>{{end}}</code></pre>
         <div class='metadata'>
-            <time>Created: {{.Created.Format "2006-01-02T15:04:05 -0700 MST"}}</time>
-            <time>Expired: {{.Expired.Format "2006-01-02T15:04:05 -0700 MST"}}</time>
+            <time>Created: {{readable_date .Created}}</time>
+            <time>Expired: {{readable_date .Expired}}</time>
         </div>
     </div>
     {{end}}

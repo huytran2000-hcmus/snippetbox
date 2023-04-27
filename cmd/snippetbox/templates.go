@@ -5,13 +5,15 @@ import (
 	"html/template"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/huytran2000-hcmus/snippetbox/internal/models"
 )
 
 type templateData struct {
-	Snippet  *models.Snippet
-	Snippets []models.Snippet
+	Snippet     *models.Snippet
+	Snippets    []models.Snippet
+	CurrentYear int
 }
 
 func newTemplateCache() (map[string]*template.Template, error) {
@@ -24,6 +26,8 @@ func newTemplateCache() (map[string]*template.Template, error) {
 
 	funcMap := template.FuncMap{
 		"split_new_line": splitNewLine,
+		"timestamp":      timestamp,
+		"readable_date":  readableDate,
 	}
 	for _, page := range pages {
 		full_name := filepath.Base(page)
@@ -46,4 +50,12 @@ func newTemplateCache() (map[string]*template.Template, error) {
 
 func splitNewLine(s string) []string {
 	return strings.Split(s, `\n`)
+}
+
+func timestamp(t *time.Time) string {
+	return t.Format("2006-01-02T15:04:05 -0700 MST")
+}
+
+func readableDate(t *time.Time) string {
+	return t.Format("Monday, 02 Jan 2006 15:04:05")
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"strings"
 )
 
 func (app *Application) serverError(w http.ResponseWriter, err error) {
@@ -19,4 +20,8 @@ func (app *Application) clientError(w http.ResponseWriter, status int) {
 
 func (app *Application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
+}
+
+func splitNewLine(s string) []string {
+	return strings.Split(s, `\n`)
 }

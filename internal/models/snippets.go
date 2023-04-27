@@ -45,7 +45,7 @@ func (m *SnippetRepository) Get(id int) (*Snippet, error) {
 }
 
 func (m *SnippetRepository) Latest() ([]Snippet, error) {
-	stmt := "SELECT id, content, created, expired FROM snippets WHERE expired > NOW() ORDER BY created DESC LIMIT 10"
+	stmt := "SELECT id, title, content, created, expired FROM snippets WHERE expired > NOW() ORDER BY created DESC LIMIT 10"
 	row, err := m.DB.Query(stmt)
 	if err != nil {
 		return nil, fmt.Errorf("error when selecting lastest snippets: %s", err)
@@ -55,7 +55,7 @@ func (m *SnippetRepository) Latest() ([]Snippet, error) {
 	var snippets []Snippet
 	for row.Next() {
 		var s Snippet
-		err := row.Scan(&s.ID, &s.Content, &s.Created, &s.Expired)
+		err := row.Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expired)
 		if err != nil {
 			return nil, fmt.Errorf("error when scaning snippet row: %s", err)
 		}

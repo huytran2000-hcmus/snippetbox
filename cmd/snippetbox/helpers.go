@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
-	"strings"
 )
 
 func (app *Application) serverError(w http.ResponseWriter, err error) {
@@ -22,6 +21,17 @@ func (app *Application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
 }
 
-func splitNewLine(s string) []string {
-	return strings.Split(s, `\n`)
+func (app *Application) render(w http.ResponseWriter, status int, page string, data *templateData) {
+	t, ok := app.templates[page]
+	if !ok {
+		err := fmt.Errorf("the template %s does not exists", page)
+		app.serverError(w, err)
+		return
+	}
+
+	w.WriteHeader(status)
+	err := t.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		app.serverError(w, err)
+	}
 }

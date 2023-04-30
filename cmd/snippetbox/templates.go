@@ -31,7 +31,7 @@ func newTemplateCache() (map[string]*template.Template, error) {
 	}
 	for _, page := range pages {
 		full_name := filepath.Base(page)
-		name := strings.TrimSuffix(full_name, ".tmpl.html")
+		name := strings.SplitN(full_name, ".", 2)[0]
 
 		t, err := template.New(name).Funcs(funcMap).ParseFiles("./ui/html/base.tmpl.html", page)
 		if err != nil {

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/huytran2000-hcmus/snippetbox/internal/models"
 	"github.com/julienschmidt/httprouter"
@@ -52,9 +54,43 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-	title := "O snail"
-	content := "O snail\nClimb Mount Fuji,\nBut slowly, slowly!\n\n– Kobayashi Issa"
-	expires := 7
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	title := r.PostForm.Get("title")
+	content := r.PostForm.Get("content")
+	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	fieldErrs := map[string]string{}
+	title = strings.TrimSpace(title)
+	if title == "" {
+		fieldErrs["title"] = "Field can't be blank"
+	}
+
+	if utf8.RuneCountInString(title) > 100 {
+		fieldErrs["title"] = "Field can't be more than 100 characters long"
+	}
+
+	if strings.TrimSpace(content) == "" {
+		fieldErrs["content"] = "Field can't be blank"
+	}
+
+	if expires != 7 && expires != 30 && expires != 365 {
+		fieldErrs["expires"] = "Field must be equal 7, 30 or 365"
+	}
+
+	if len(fieldErrs) > 0 {
+		fmt.Fprint(w, fieldErrs)
+		return
+	}
+
 	id, err := app.snippet.Insert(title, content, expires)
 	if err != nil {
 		app.serverError(w, err)
@@ -62,4 +98,9 @@ func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
+}
+
+func (app *Application) snippetCreateForm(w http.ResponseWriter, r *http.Request) {
+	data := app.newDefaultTemplateData()
+	app.render(w, http.StatusOK, "create", data)
 }

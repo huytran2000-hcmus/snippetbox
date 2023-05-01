@@ -18,6 +18,9 @@ func (app *Application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/snippet/create", app.snippetCreate)
 
 	standardMW := alice.New(app.recoverFromPanic, app.logRequest, secureHeaders)
+	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		app.notFound(w)
+	})
 
 	return standardMW.Then(router)
 }

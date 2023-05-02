@@ -5,12 +5,18 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
-	"unicode/utf8"
 
 	"github.com/huytran2000-hcmus/snippetbox/internal/models"
+	"github.com/huytran2000-hcmus/snippetbox/internal/validator"
 	"github.com/julienschmidt/httprouter"
 )
+
+type snippetCreateForm struct {
+	validator.Validator
+	Title   string
+	Content string
+	Expires string
+}
 
 func (app *Application) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
@@ -60,37 +66,35 @@ func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	title := r.PostForm.Get("title")
-	content := r.PostForm.Get("content")
-	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
+	titleRaw := r.PostForm.Get("title")
+	contentRaw := r.PostForm.Get("content")
+	expiresRaw := r.PostForm.Get("expires")
+	form := snippetCreateForm{
+		Title:   titleRaw,
+		Content: contentRaw,
+		Expires: expiresRaw,
+	}
+
+	form.Check("title", titleRaw).
+		NotBlank("This field can't be blank").
+		MaxCharacters("This field can't be more than 100 characters long", 100)
+	form.Check("content", contentRaw).
+		NotBlank("This field can't be blank")
+	form.Check("expires", expiresRaw).
+		InPermittedArr("This field must be equal 7, 30 or 365", "7", "30", "365")
+	if !form.IsValid() {
+		data := app.newDefaultTemplateData()
+		data.Form = form
+		app.render(w, http.StatusBadRequest, "create", data)
+		return
+	}
+
+	title := titleRaw
+	content := contentRaw
+	expires, err := strconv.Atoi(expiresRaw)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
-		return
 	}
-
-	fieldErrs := map[string]string{}
-	title = strings.TrimSpace(title)
-	if title == "" {
-		fieldErrs["title"] = "Field can't be blank"
-	}
-
-	if utf8.RuneCountInString(title) > 100 {
-		fieldErrs["title"] = "Field can't be more than 100 characters long"
-	}
-
-	if strings.TrimSpace(content) == "" {
-		fieldErrs["content"] = "Field can't be blank"
-	}
-
-	if expires != 7 && expires != 30 && expires != 365 {
-		fieldErrs["expires"] = "Field must be equal 7, 30 or 365"
-	}
-
-	if len(fieldErrs) > 0 {
-		fmt.Fprint(w, fieldErrs)
-		return
-	}
-
 	id, err := app.snippet.Insert(title, content, expires)
 	if err != nil {
 		app.serverError(w, err)
@@ -102,5 +106,8 @@ func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 
 func (app *Application) snippetCreateForm(w http.ResponseWriter, r *http.Request) {
 	data := app.newDefaultTemplateData()
+	data.Form = &snippetCreateForm{
+		Expires: "365",
+	}
 	app.render(w, http.StatusOK, "create", data)
 }

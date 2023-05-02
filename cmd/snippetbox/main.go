@@ -10,17 +10,20 @@ import (
 	"os"
 	"time"
 
+	"github.com/alexedwards/scs/postgresstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
 	"github.com/huytran2000-hcmus/snippetbox/internal/models"
 	_ "github.com/lib/pq"
 )
 
 type Application struct {
-	infoLog     *log.Logger
-	errLog      *log.Logger
-	snippet     *models.SnippetRepository
-	templates   map[string]*template.Template
-	formDecoder *form.Decoder
+	infoLog        *log.Logger
+	errLog         *log.Logger
+	snippet        *models.SnippetRepository
+	templates      map[string]*template.Template
+	formDecoder    *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -46,12 +49,18 @@ func main() {
 
 	formDecoder := form.NewDecoder()
 
+	sessionManager := scs.New()
+	sessionManager.Store = postgresstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.IdleTimeout = 30 * time.Minute
+
 	app := &Application{
-		infoLog:     infoLog,
-		errLog:      errLog,
-		snippet:     &models.SnippetRepository{DB: db},
-		templates:   templates,
-		formDecoder: formDecoder,
+		infoLog:        infoLog,
+		errLog:         errLog,
+		snippet:        &models.SnippetRepository{DB: db},
+		templates:      templates,
+		formDecoder:    formDecoder,
+		sessionManager: sessionManager,
 	}
 
 	srv := http.Server{

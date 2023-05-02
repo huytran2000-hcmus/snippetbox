@@ -11,6 +11,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+const flashMessKey = "flash"
+
 type snippetCreateForm struct {
 	validator.Validator `form:"-"`
 	Title               string `form:"title"`
@@ -30,7 +32,7 @@ func (app *Application) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := app.newDefaultTemplateData()
+	data := app.newDefaultTemplateData(r)
 	data.Snippets = snippets
 	app.render(w, http.StatusOK, "home", data)
 }
@@ -54,7 +56,7 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := app.newDefaultTemplateData()
+	data := app.newDefaultTemplateData(r)
 	data.Snippet = s
 	app.render(w, http.StatusOK, "view", data)
 }
@@ -82,7 +84,7 @@ func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !form.IsValid() {
-		data := app.newDefaultTemplateData()
+		data := app.newDefaultTemplateData(r)
 		data.Form = form
 		app.render(w, http.StatusBadRequest, "create", data)
 		return
@@ -94,11 +96,13 @@ func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app.sessionManager.Put(r.Context(), flashMessKey, "Snippet has been successfully created!")
+
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
 
 func (app *Application) snippetCreateForm(w http.ResponseWriter, r *http.Request) {
-	data := app.newDefaultTemplateData()
+	data := app.newDefaultTemplateData(r)
 	data.Form = &snippetCreateForm{
 		Expires: "365",
 	}

@@ -7,7 +7,7 @@ CREATE TABLE app.snippets (
     title VARCHAR(100) NOT NULL,
     content TEXT NOT NULL,
     created TIMESTAMP NOT NULL,
-    expired TIMESTAMP NOT NULL
+    expires TIMESTAMP NOT NULL
 );
 
 -- Add an index on the created column.
@@ -34,6 +34,13 @@ INSERT INTO app.snippets (title, content, created, expires) VALUES (
     NOW() + INTERVAL '7 DAY'
 );
 
+CREATE TABLE app.sessions (
+    token TEXT PRIMARY KEY,
+    data BYTEA NOT NULL,
+    expiry TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX sessions_expiry_idx ON app.sessions(expiry);
 
 CREATE ROLE readonly;
 GRANT CONNECT ON DATABASE snippetbox TO readonly;

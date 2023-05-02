@@ -10,15 +10,17 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-playground/form/v4"
 	"github.com/huytran2000-hcmus/snippetbox/internal/models"
 	_ "github.com/lib/pq"
 )
 
 type Application struct {
-	infoLog   *log.Logger
-	errLog    *log.Logger
-	snippet   *models.SnippetRepository
-	templates map[string]*template.Template
+	infoLog     *log.Logger
+	errLog      *log.Logger
+	snippet     *models.SnippetRepository
+	templates   map[string]*template.Template
+	formDecoder *form.Decoder
 }
 
 func main() {
@@ -41,11 +43,15 @@ func main() {
 	if err != nil {
 		errLog.Fatal(err)
 	}
+
+	formDecoder := form.NewDecoder()
+
 	app := &Application{
-		infoLog:   infoLog,
-		errLog:    errLog,
-		snippet:   &models.SnippetRepository{DB: db},
-		templates: templates,
+		infoLog:     infoLog,
+		errLog:      errLog,
+		snippet:     &models.SnippetRepository{DB: db},
+		templates:   templates,
+		formDecoder: formDecoder,
 	}
 
 	srv := http.Server{

@@ -12,10 +12,10 @@ import (
 )
 
 type snippetCreateForm struct {
-	validator.Validator
-	Title   string
-	Content string
-	Expires string
+	validator.Validator `form:"-"`
+	Title               string `form:"title"`
+	Content             string `form:"content"`
+	Expires             string `form:"expires"`
 }
 
 func (app *Application) home(w http.ResponseWriter, r *http.Request) {
@@ -60,28 +60,27 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	var form snippetCreateForm
+	err := app.decodePostForm(r, &form)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
-	titleRaw := r.PostForm.Get("title")
-	contentRaw := r.PostForm.Get("content")
-	expiresRaw := r.PostForm.Get("expires")
-	form := snippetCreateForm{
-		Title:   titleRaw,
-		Content: contentRaw,
-		Expires: expiresRaw,
+	title := form.Check("title", form.Title).
+		NotBlank("This field can't be blank").
+		LE("This field can't be more than 100 characters long", 100).FieldValue
+	content := form.Check("content", form.Content).
+		NotBlank("This field can't be blank").FieldValue
+	expires, err := form.Check("expires", form.Expires).
+		In("This field must be equal 7, 30 or 365", "7", "30", "365").
+		ToInt()
+	if err != nil {
+		app.errLog.Print(err)
+		app.clientError(w, http.StatusBadRequest)
+		return
 	}
 
-	form.Check("title", titleRaw).
-		NotBlank("This field can't be blank").
-		MaxCharacters("This field can't be more than 100 characters long", 100)
-	form.Check("content", contentRaw).
-		NotBlank("This field can't be blank")
-	form.Check("expires", expiresRaw).
-		InPermittedArr("This field must be equal 7, 30 or 365", "7", "30", "365")
 	if !form.IsValid() {
 		data := app.newDefaultTemplateData()
 		data.Form = form
@@ -89,12 +88,6 @@ func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	title := titleRaw
-	content := contentRaw
-	expires, err := strconv.Atoi(expiresRaw)
-	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
-	}
 	id, err := app.snippet.Insert(title, content, expires)
 	if err != nil {
 		app.serverError(w, err)

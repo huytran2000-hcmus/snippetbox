@@ -1,14 +1,15 @@
 package validator
 
 import (
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
 
 type Validator struct {
-	fieldName string
-	fieldVal  string
-	FieldErrs map[string]string
+	FieldName  string
+	FieldValue string
+	FieldErrs  map[string]string
 }
 
 func (v *Validator) IsValid() bool {
@@ -16,13 +17,18 @@ func (v *Validator) IsValid() bool {
 }
 
 func (v *Validator) Check(name string, val string) *Validator {
-	v.fieldName = name
-	v.fieldVal = val
+	v.FieldName = name
+	v.FieldValue = val
 	return v
 }
 
+func (v *Validator) ToInt() (int, error) {
+	i, err := strconv.Atoi(v.FieldValue)
+	return i, err
+}
+
 func (v *Validator) NotBlank(message string) *Validator {
-	val := strings.TrimSpace(v.fieldVal)
+	val := strings.TrimSpace(v.FieldValue)
 	if val == "" {
 		v.addFieldError(message)
 	}
@@ -30,17 +36,17 @@ func (v *Validator) NotBlank(message string) *Validator {
 	return v
 }
 
-func (v *Validator) MaxCharacters(message string, n int) *Validator {
-	if utf8.RuneCountInString(v.fieldVal) > n {
+func (v *Validator) LE(message string, n int) *Validator {
+	if utf8.RuneCountInString(v.FieldValue) > n {
 		v.addFieldError(message)
 	}
 
 	return v
 }
 
-func (v *Validator) InPermittedArr(message string, permittedArrs ...string) *Validator {
+func (v *Validator) In(message string, permittedArrs ...string) *Validator {
 	for _, permitted := range permittedArrs {
-		if v.fieldVal == permitted {
+		if v.FieldValue == permitted {
 			return v
 		}
 	}
@@ -54,7 +60,7 @@ func (v *Validator) addFieldError(message string) {
 		v.FieldErrs = map[string]string{}
 	}
 
-	name := v.fieldName
+	name := v.FieldName
 	_, ok := v.FieldErrs[name]
 	if !ok {
 		v.FieldErrs[name] = message

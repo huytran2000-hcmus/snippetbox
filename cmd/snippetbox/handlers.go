@@ -178,7 +178,7 @@ func (app *Application) userSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.sessionManager.Put(r.Context(), flashMessKey, "You signup was successful. Please log in")
+	app.sessionManager.Put(r.Context(), flashMessKey, "Your signup was successful. Please log in")
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
@@ -236,4 +236,17 @@ func (app *Application) userLogin(w http.ResponseWriter, r *http.Request) {
 	app.sessionManager.Put(r.Context(), userIDKey, id)
 
 	http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
+}
+
+func (app *Application) userLogout(w http.ResponseWriter, r *http.Request) {
+	err := app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.sessionManager.Remove(r.Context(), userIDKey)
+	app.sessionManager.Put(r.Context(), flashMessKey, "You have successfully logged out")
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

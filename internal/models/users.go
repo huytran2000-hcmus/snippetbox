@@ -22,7 +22,7 @@ type UserRepository struct {
 	DB *sql.DB
 }
 
-func (rst *UserRepository) Insert(name string, email string, password string) error {
+func (rep *UserRepository) Insert(name string, email string, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrPasswordTooLong) {
@@ -33,7 +33,7 @@ func (rst *UserRepository) Insert(name string, email string, password string) er
 	}
 
 	stmt := "INSERT INTO users (name, email, hashed_password, created) VALUES ($1, $2, $3, NOW())"
-	_, err = rst.DB.Exec(stmt, name, email, hashedPassword)
+	_, err = rep.DB.Exec(stmt, name, email, hashedPassword)
 	if err != nil {
 		var postgresErr *pq.Error
 		if errors.As(err, &postgresErr); postgresErr != nil {
@@ -48,12 +48,12 @@ func (rst *UserRepository) Insert(name string, email string, password string) er
 	return nil
 }
 
-func (rst *UserRepository) Authenticate(email string, password string) (int, error) {
+func (rep *UserRepository) Authenticate(email string, password string) (int, error) {
 	var id int
 	var hashedPassword []byte
 
 	stmt := "SELECT id, hashed_password FROM users where email = $1"
-	err := rst.DB.QueryRow(stmt, email).Scan(&id, &hashedPassword)
+	err := rep.DB.QueryRow(stmt, email).Scan(&id, &hashedPassword)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, ErrInvalidCredentials

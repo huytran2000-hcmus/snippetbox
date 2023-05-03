@@ -37,3 +37,16 @@ func secureHeaders(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func (app *Application) requireAuthentication(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !app.isAuthenticated(r) {
+			app.sessionManager.Put(r.Context(), flashMessKey, "Please login first")
+			http.Redirect(w, r, "/user/login/", http.StatusSeeOther)
+			return
+		}
+
+		w.Header().Set("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
+}

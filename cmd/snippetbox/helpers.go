@@ -47,8 +47,9 @@ func (app *Application) render(w http.ResponseWriter, status int, page string, d
 
 func (app *Application) newDefaultTemplateData(r *http.Request) *templateData {
 	return &templateData{
-		CurrentYear:  time.Now().Year(),
-		FlashMessage: app.sessionManager.PopString(r.Context(), flashMessKey),
+		CurrentYear:     time.Now().Year(),
+		FlashMessage:    app.sessionManager.PopString(r.Context(), flashMessKey),
+		IsAuthenticated: app.isAuthenticated(r),
 	}
 }
 
@@ -65,4 +66,8 @@ func (app *Application) decodePostForm(r *http.Request, dst interface{}) error {
 	}
 
 	return err
+}
+
+func (app *Application) isAuthenticated(r *http.Request) bool {
+	return app.sessionManager.Exists(r.Context(), userIDKey)
 }

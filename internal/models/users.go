@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/lib/pq"
@@ -24,6 +25,10 @@ type UserRepository struct {
 func (rst *UserRepository) Insert(name string, email string, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
+		if errors.Is(err, bcrypt.ErrPasswordTooLong) {
+			return ErrPasswordTooLong
+		}
+
 		return err
 	}
 
@@ -37,8 +42,34 @@ func (rst *UserRepository) Insert(name string, email string, password string) er
 			}
 		}
 
-		return err
+		return fmt.Errorf("models: error when inserting a user: %s", err)
 	}
 
 	return nil
+}
+
+func (rst *UserRepository) Authenticate(email string, password string) (int, error) {
+	var id int
+	var hashedPassword []byte
+
+	stmt := "SELECT id, hashed_password FROM users where email = $1"
+	err := rst.DB.QueryRow(stmt, email).Scan(&id, &hashedPassword)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrInvalidCredentials
+		}
+
+		return 0, fmt.Errorf("error when selecting a user: %s", err)
+	}
+
+	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return 0, ErrInvalidCredentials
+		}
+
+		return 0, err
+	}
+
+	return id, nil
 }

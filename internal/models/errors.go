@@ -6,4 +6,5 @@ var (
 	ErrNoRecord           = errors.New("models: no rows found")
 	ErrInvalidCredentials = errors.New("models: invalid credentials")
 	ErrDuplicateEmail     = errors.New("models: duplicate email")
+	ErrPasswordTooLong    = errors.New("models: password too long")
 )

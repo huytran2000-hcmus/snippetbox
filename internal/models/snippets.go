@@ -23,7 +23,7 @@ func (rst *SnippetRepository) Insert(title string, content string, expires int) 
 	var id int
 	err := rst.DB.QueryRow(stmt, title, content, expires).Scan(&id)
 	if err != nil {
-		return 0, fmt.Errorf("error when inserting snippet: %s", err)
+		return 0, fmt.Errorf("models: error when inserting a snippet: %s", err)
 	}
 
 	return id, nil
@@ -40,7 +40,7 @@ func (rst *SnippetRepository) Get(id int) (*Snippet, error) {
 	case nil:
 		return &s, nil
 	default:
-		return nil, fmt.Errorf("error when selecting a snippet: %s", err)
+		return nil, fmt.Errorf("models: error when selecting a snippet: %s", err)
 	}
 }
 
@@ -48,7 +48,7 @@ func (rst *SnippetRepository) Latest() ([]Snippet, error) {
 	stmt := "SELECT id, title, content, created, expires FROM snippets WHERE expires > NOW() ORDER BY created DESC LIMIT 10"
 	row, err := rst.DB.Query(stmt)
 	if err != nil {
-		return nil, fmt.Errorf("error when selecting lastest snippets: %s", err)
+		return nil, fmt.Errorf("models: error when selecting lastest snippets: %s", err)
 	}
 	defer row.Close()
 
@@ -57,14 +57,14 @@ func (rst *SnippetRepository) Latest() ([]Snippet, error) {
 		var s Snippet
 		err := row.Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
 		if err != nil {
-			return nil, fmt.Errorf("error when scaning snippet row: %s", err)
+			return nil, fmt.Errorf("models: error when scaning snippet row: %s", err)
 		}
 		snippets = append(snippets, s)
 	}
 
 	err = row.Err()
 	if err != nil {
-		return nil, fmt.Errorf("error when iterating snippet row: %s", err)
+		return nil, fmt.Errorf("models: error when iterating snippet row: %s", err)
 	}
 
 	return snippets, nil

@@ -20,6 +20,13 @@ type snippetCreateForm struct {
 	Expires             string `form:"expires"`
 }
 
+type userSignupForm struct {
+	validator.Validator `form:"-"`
+	Name                string `form:"name"`
+	Email               string `form:"email"`
+	Password            string `form:"password"`
+}
+
 func (app *Application) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		app.notFound(w)
@@ -69,19 +76,14 @@ func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	title := form.Check("title", form.Title).
+	title := form.CheckField("title", form.Title).
 		NotBlank("This field can't be blank").
-		LE("This field can't be more than 100 characters long", 100).FieldValue
-	content := form.Check("content", form.Content).
-		NotBlank("This field can't be blank").FieldValue
-	expires, err := form.Check("expires", form.Expires).
+		LE("This field can't be more than 100 characters long", 100).Value()
+	content := form.CheckField("content", form.Content).
+		NotBlank("This field can't be blank").Value()
+	expires := form.CheckField("expires", form.Expires).
 		In("This field must be equal 7, 30 or 365", "7", "30", "365").
-		ToInt()
-	if err != nil {
-		app.errLog.Print(err)
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
+		ToInt("This field must be a number equal 7, 30 or 365")
 
 	if !form.IsValid() {
 		data := app.newDefaultTemplateData(r)
@@ -107,4 +109,59 @@ func (app *Application) snippetCreateForm(w http.ResponseWriter, r *http.Request
 		Expires: "365",
 	}
 	app.render(w, http.StatusOK, "create", data)
+}
+
+func (app *Application) userSignupForm(w http.ResponseWriter, r *http.Request) {
+	data := app.newDefaultTemplateData(r)
+	data.Form = &userSignupForm{}
+
+	app.render(w, http.StatusOK, "signup", data)
+}
+
+func (app *Application) userSignup(w http.ResponseWriter, r *http.Request) {
+	var form userSignupForm
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	name := form.CheckField("name", form.Name).
+		NotBlank("This field can't be blank").
+		LE("This field can't be more than 255 characters long", 255).
+		Value()
+	email := form.CheckField("email", form.Email).
+		NotBlank("This field can't be blank").
+		LE("This field can't be more than 255 characters long", 255).
+		IsEmail("This field must be a valid email address").
+		Value()
+	password := form.CheckField("password", form.Password).
+		NotBlank("This field can't be blank").
+		GE("This field must be at least 8 characters long", 8).
+		Value()
+
+	renderFormErrors := func() {
+		data := app.newDefaultTemplateData(r)
+		data.Form = &form
+		app.render(w, http.StatusBadRequest, "signup", data)
+	}
+
+	if !form.IsValid() {
+		renderFormErrors()
+		return
+	}
+
+	err = app.user.Insert(name, email, password)
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			form.AddFieldError("email", "The email address is already in use")
+			renderFormErrors()
+			return
+		}
+		app.serverError(w, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), flashMessKey, "You signup was successful. Please log in")
+	http.Redirect(w, r, "/user/signup", http.StatusSeeOther)
 }

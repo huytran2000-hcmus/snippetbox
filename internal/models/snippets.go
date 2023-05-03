@@ -18,10 +18,10 @@ type SnippetRepository struct {
 	DB *sql.DB
 }
 
-func (m *SnippetRepository) Insert(title string, content string, expires int) (int, error) {
+func (rst *SnippetRepository) Insert(title string, content string, expires int) (int, error) {
 	stmt := "INSERT INTO snippets (title, content, created, expires) values($1, $2, NOW(), NOW() + $3 * INTERVAL '1 DAY') RETURNING id"
 	var id int
-	err := m.DB.QueryRow(stmt, title, content, expires).Scan(&id)
+	err := rst.DB.QueryRow(stmt, title, content, expires).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("error when inserting snippet: %s", err)
 	}
@@ -29,10 +29,10 @@ func (m *SnippetRepository) Insert(title string, content string, expires int) (i
 	return id, nil
 }
 
-func (m *SnippetRepository) Get(id int) (*Snippet, error) {
+func (rst *SnippetRepository) Get(id int) (*Snippet, error) {
 	var s Snippet
 	stmt := "SELECT id, title, content, created, expires FROM snippets WHERE expires > NOW() AND id = $1"
-	err := m.DB.QueryRow(stmt, id).Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
+	err := rst.DB.QueryRow(stmt, id).Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
 
 	switch err {
 	case sql.ErrNoRows:
@@ -44,9 +44,9 @@ func (m *SnippetRepository) Get(id int) (*Snippet, error) {
 	}
 }
 
-func (m *SnippetRepository) Latest() ([]Snippet, error) {
+func (rst *SnippetRepository) Latest() ([]Snippet, error) {
 	stmt := "SELECT id, title, content, created, expires FROM snippets WHERE expires > NOW() ORDER BY created DESC LIMIT 10"
-	row, err := m.DB.Query(stmt)
+	row, err := rst.DB.Query(stmt)
 	if err != nil {
 		return nil, fmt.Errorf("error when selecting lastest snippets: %s", err)
 	}

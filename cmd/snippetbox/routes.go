@@ -19,6 +19,9 @@ func (app *Application) routes() http.Handler {
 	router.Handler(http.MethodPost, "/snippet/create", statefulMW.ThenFunc(app.snippetCreate))
 	router.Handler(http.MethodGet, "/snippet/create", statefulMW.ThenFunc(app.snippetCreateForm))
 
+	router.Handler(http.MethodGet, "/user/signup", statefulMW.ThenFunc(app.userSignupForm))
+	router.Handler(http.MethodPost, "/user/signup", statefulMW.ThenFunc(app.userSignup))
+
 	standardMW := alice.New(app.recoverFromPanic, app.logRequest, secureHeaders)
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)

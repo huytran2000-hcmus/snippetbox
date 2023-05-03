@@ -1,14 +1,17 @@
 package validator
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 )
 
+var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+
 type Validator struct {
-	FieldName  string
-	FieldValue string
+	fieldName  string
+	fieldValue string
 	FieldErrs  map[string]string
 }
 
@@ -16,19 +19,33 @@ func (v *Validator) IsValid() bool {
 	return len(v.FieldErrs) == 0
 }
 
-func (v *Validator) Check(name string, val string) *Validator {
-	v.FieldName = name
-	v.FieldValue = val
+func (v *Validator) CheckField(name string, val string) *Validator {
+	v.fieldName = name
+	v.fieldValue = val
 	return v
 }
 
-func (v *Validator) ToInt() (int, error) {
-	i, err := strconv.Atoi(v.FieldValue)
-	return i, err
+func (v *Validator) AddFieldError(fieldname string, message string) {
+	if v.FieldErrs == nil {
+		v.FieldErrs = map[string]string{}
+	}
+
+	_, ok := v.FieldErrs[fieldname]
+	if !ok {
+		v.FieldErrs[fieldname] = message
+	}
+}
+
+func (v *Validator) ToInt(message string) int {
+	i, err := strconv.Atoi(v.fieldValue)
+	if err != nil {
+		v.addFieldError(message)
+	}
+	return i
 }
 
 func (v *Validator) NotBlank(message string) *Validator {
-	val := strings.TrimSpace(v.FieldValue)
+	val := strings.TrimSpace(v.fieldValue)
 	if val == "" {
 		v.addFieldError(message)
 	}
@@ -37,7 +54,7 @@ func (v *Validator) NotBlank(message string) *Validator {
 }
 
 func (v *Validator) LE(message string, n int) *Validator {
-	if utf8.RuneCountInString(v.FieldValue) > n {
+	if utf8.RuneCountInString(v.fieldValue) > n {
 		v.addFieldError(message)
 	}
 
@@ -46,7 +63,7 @@ func (v *Validator) LE(message string, n int) *Validator {
 
 func (v *Validator) In(message string, permittedArrs ...string) *Validator {
 	for _, permitted := range permittedArrs {
-		if v.FieldValue == permitted {
+		if v.fieldValue == permitted {
 			return v
 		}
 	}
@@ -55,14 +72,31 @@ func (v *Validator) In(message string, permittedArrs ...string) *Validator {
 	return v
 }
 
-func (v *Validator) addFieldError(message string) {
-	if v.FieldErrs == nil {
-		v.FieldErrs = map[string]string{}
+func (v *Validator) GE(message string, n int) *Validator {
+	if utf8.RuneCountInString(v.fieldValue) < n {
+		v.addFieldError(message)
 	}
 
-	name := v.FieldName
-	_, ok := v.FieldErrs[name]
+	return v
+}
+
+func (v *Validator) Matches(message string, rx *regexp.Regexp) *Validator {
+	ok := rx.MatchString(v.fieldValue)
 	if !ok {
-		v.FieldErrs[name] = message
+		v.addFieldError(message)
 	}
+
+	return v
+}
+
+func (v *Validator) IsEmail(message string) *Validator {
+	return v.Matches(message, EmailRX)
+}
+
+func (v *Validator) addFieldError(message string) {
+	v.AddFieldError(v.fieldName, message)
+}
+
+func (v *Validator) Value() string {
+	return v.fieldValue
 }

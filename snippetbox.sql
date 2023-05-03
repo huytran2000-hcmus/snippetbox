@@ -2,7 +2,8 @@ REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 REVOKE ALL ON DATABASE snippetbox FROM PUBLIC;
 
 CREATE SCHEMA app;
-CREATE TABLE app.snippets (
+SET search_path TO app;
+CREATE TABLE snippets (
     id serial NOT NULL PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
     content TEXT NOT NULL,
@@ -11,36 +12,57 @@ CREATE TABLE app.snippets (
 );
 
 -- Add an index on the created column.
-CREATE INDEX idx_snippets_created ON app.snippets(created);
+CREATE INDEX idx_snippets_created ON snippets(created);
 
-INSERT INTO app.snippets (title, content, created, expires) VALUES (
+INSERT INTO snippets (title, content, created, expires) VALUES (
     'An old silent pond',
     'An old silent pond...\nA frog jumps into the pond,\nsplash! Silence again.\n\n– Matsuo Bashō',
     NOW(),
     NOW() + INTERVAL '1 YEAR'
 );
 
-INSERT INTO app.snippets (title, content, created, expires) VALUES (
+INSERT INTO snippets (title, content, created, expires) VALUES (
     'Over the wintry forest',
     'Over the wintry\nforest, winds howl in rage\nwith no leaves to blow.\n\n– Natsume Soseki',
     NOW(),
     NOW() + INTERVAL '1 YEAR'
 );
 
-INSERT INTO app.snippets (title, content, created, expires) VALUES (
+INSERT INTO snippets (title, content, created, expires) VALUES (
     'First autumn morning',
     'First autumn morning\nthe mirror I stare into\nshows my father''s face.\n\n– Murakami Kijo',
     NOW(),
     NOW() + INTERVAL '7 DAY'
 );
 
-CREATE TABLE app.sessions (
+INSERT INTO snippets (title, content, created, expires) VALUES (
+    'From time to time',
+    'From time to time
+The clouds give rest
+To the moon-beholders.
+
+- Matsu Basho',
+    NOW(),
+    NOW() + INTERVAL '30 DAY'
+);
+
+CREATE TABLE sessions (
     token TEXT PRIMARY KEY,
     data BYTEA NOT NULL,
     expiry TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX sessions_expiry_idx ON app.sessions(expiry);
+CREATE INDEX sessions_expiry_idx ON sessions(expiry);
+
+CREATE TABLE users (
+    id serial NOT NULL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    hashed_password CHAR(60) NOT NULL,
+    created TIMESTAMP NOT NULL
+);
+
+ALTER TABLE users ADD CONSTRAINT users_uc_email UNIQUE (email);
 
 CREATE ROLE readonly;
 GRANT CONNECT ON DATABASE snippetbox TO readonly;

@@ -13,7 +13,7 @@ func (app *Application) routes() http.Handler {
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
-	statefulMW := alice.New(app.sessionManager.LoadAndSave)
+	statefulMW := alice.New(app.sessionManager.LoadAndSave, CQRFPrevent, app.authenticate)
 	router.Handler(http.MethodGet, "/", statefulMW.ThenFunc(app.home))
 	router.Handler(http.MethodGet, "/snippet/view/:id", statefulMW.ThenFunc(app.snippetView))
 

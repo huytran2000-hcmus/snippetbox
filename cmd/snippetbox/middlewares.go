@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+
+	"github.com/justinas/nosurf"
 )
 
 func (app *Application) logRequest(next http.Handler) http.Handler {
@@ -47,6 +50,40 @@ func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 		}
 
 		w.Header().Set("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func CQRFPrevent(next http.Handler) http.Handler {
+	cqrfHandler := nosurf.New(next)
+	cqrfHandler.SetBaseCookie(http.Cookie{
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+	})
+
+	return cqrfHandler
+}
+
+func (app *Application) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := app.sessionManager.GetInt(r.Context(), userIDKey)
+		if id == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		exists, err := app.user.Exists(id)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		if exists {
+			ctx := context.WithValue(r.Context(), isAuthenticatedCtxKey, true)
+			r = r.WithContext(ctx)
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }

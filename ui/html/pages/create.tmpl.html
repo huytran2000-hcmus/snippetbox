@@ -25,6 +25,7 @@
         <input type='radio' name='expires' value='30' {{if (eq .Form.Expires "30")}}checked{{end}}> One Month
         <input type='radio' name='expires' value='7' {{if (eq .Form.Expires "7")}}checked{{end}}> One Week
     </div>
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
     <div>
         <input type='submit' value='Publish Snippet'>
     </div>

@@ -59,7 +59,7 @@ func (rep *UserRepository) Authenticate(email string, password string) (int, err
 			return 0, ErrInvalidCredentials
 		}
 
-		return 0, fmt.Errorf("error when selecting a user: %s", err)
+		return 0, fmt.Errorf("models: error when selecting a user: %s", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
@@ -72,4 +72,21 @@ func (rep *UserRepository) Authenticate(email string, password string) (int, err
 	}
 
 	return id, nil
+}
+
+func (rep *UserRepository) Exists(id int) (bool, error) {
+	var exists bool
+
+	stmt := "SELECT EXISTS(SELECT true FROM users WHERE id = $1)"
+
+	err := rep.DB.QueryRow(stmt, id).Scan(&exists)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, ErrNoRecord
+		}
+
+		return false, fmt.Errorf("models: errors when selecting a user")
+	}
+
+	return exists, nil
 }

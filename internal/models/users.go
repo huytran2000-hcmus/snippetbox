@@ -18,11 +18,17 @@ type User struct {
 	Created        time.Time
 }
 
-type UserRepository struct {
+type Users interface {
+	Insert(name string, email string, password string) error
+	Authenticate(email string, password string) (int, error)
+	Exists(id int) (bool, error)
+}
+
+type UserDB struct {
 	DB *sql.DB
 }
 
-func (rep *UserRepository) Insert(name string, email string, password string) error {
+func (db *UserDB) Insert(name string, email string, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrPasswordTooLong) {
@@ -33,7 +39,7 @@ func (rep *UserRepository) Insert(name string, email string, password string) er
 	}
 
 	stmt := "INSERT INTO users (name, email, hashed_password, created) VALUES ($1, $2, $3, NOW())"
-	_, err = rep.DB.Exec(stmt, name, email, hashedPassword)
+	_, err = db.DB.Exec(stmt, name, email, hashedPassword)
 	if err != nil {
 		var postgresErr *pq.Error
 		if errors.As(err, &postgresErr); postgresErr != nil {
@@ -48,12 +54,12 @@ func (rep *UserRepository) Insert(name string, email string, password string) er
 	return nil
 }
 
-func (rep *UserRepository) Authenticate(email string, password string) (int, error) {
+func (db *UserDB) Authenticate(email string, password string) (int, error) {
 	var id int
 	var hashedPassword []byte
 
 	stmt := "SELECT id, hashed_password FROM users where email = $1"
-	err := rep.DB.QueryRow(stmt, email).Scan(&id, &hashedPassword)
+	err := db.DB.QueryRow(stmt, email).Scan(&id, &hashedPassword)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, ErrInvalidCredentials
@@ -74,12 +80,12 @@ func (rep *UserRepository) Authenticate(email string, password string) (int, err
 	return id, nil
 }
 
-func (rep *UserRepository) Exists(id int) (bool, error) {
+func (db *UserDB) Exists(id int) (bool, error) {
 	var exists bool
 
 	stmt := "SELECT EXISTS(SELECT true FROM users WHERE id = $1)"
 
-	err := rep.DB.QueryRow(stmt, id).Scan(&exists)
+	err := db.DB.QueryRow(stmt, id).Scan(&exists)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, ErrNoRecord

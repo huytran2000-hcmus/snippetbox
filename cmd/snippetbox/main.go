@@ -21,9 +21,9 @@ import (
 type Application struct {
 	infoLog        *log.Logger
 	errLog         *log.Logger
-	snippet        *models.SnippetRepository
-	user           *models.UserRepository
-	templates      map[string]*template.Template
+	snippet        models.Snippets
+	users          models.Users
+	templateCache  map[string]*template.Template
 	formDecoder    *form.Decoder
 	sessionManager *scs.SessionManager
 }
@@ -55,13 +55,16 @@ func main() {
 	sessionManager.Store = postgresstore.New(db)
 	sessionManager.Lifetime = 12 * time.Hour
 	sessionManager.IdleTimeout = 30 * time.Minute
+	sessionManager.Cookie.Secure = true
+	sessionManager.Cookie.HttpOnly = true
+	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
 
 	app := &Application{
 		infoLog:        infoLog,
 		errLog:         errLog,
-		snippet:        &models.SnippetRepository{DB: db},
-		user:           &models.UserRepository{DB: db},
-		templates:      templates,
+		snippet:        &models.SnippetDB{DB: db},
+		users:          &models.UserDB{DB: db},
+		templateCache:  templates,
 		formDecoder:    formDecoder,
 		sessionManager: sessionManager,
 	}

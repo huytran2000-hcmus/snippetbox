@@ -58,7 +58,7 @@ func (app *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(params.ByName("id"))
 	if err != nil {
-		app.serverError(w, err)
+		app.clientError(w, http.StatusNotFound)
 		return
 	}
 
@@ -160,7 +160,7 @@ func (app *Application) userSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.user.Insert(name, email, password)
+	err = app.users.Insert(name, email, password)
 	if err != nil {
 		if errors.Is(err, models.ErrDuplicateEmail) {
 			form.AddFieldError("email", "The email address is already in use")
@@ -216,7 +216,7 @@ func (app *Application) userLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := app.user.Authenticate(email, password)
+	id, err := app.users.Authenticate(email, password)
 	if err != nil {
 		if errors.Is(err, models.ErrInvalidCredentials) {
 			form.AddNonFieldError("Email or Password is not correct")

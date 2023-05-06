@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/huytran2000-hcmus/snippetbox/ui"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 )
@@ -10,8 +11,8 @@ import (
 func (app *Application) routes() http.Handler {
 	router := httprouter.New()
 
-	fileServer := http.FileServer(http.Dir("./ui/static"))
-	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
+	fileServer := http.FileServer(http.FS(ui.Files))
+	router.Handler(http.MethodGet, "/static/*filepath", fileServer)
 
 	statefulMW := alice.New(app.sessionManager.LoadAndSave, CQRFPrevent, app.authenticate)
 	router.Handler(http.MethodGet, "/", statefulMW.ThenFunc(app.home))

@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/huytran2000-hcmus/snippetbox/internal/models"
+	"github.com/huytran2000-hcmus/snippetbox/ui"
 )
 
 type templateData struct {
@@ -23,9 +25,13 @@ type templateData struct {
 func newTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 
-	pages, err := filepath.Glob("./ui/html/pages/*.tmpl.html")
+	files, err := fs.Sub(ui.Files, "html")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("template: don't have html directory: %s", err)
+	}
+	pages, err := fs.Glob(files, "pages/*")
+	if err != nil {
+		return nil, fmt.Errorf("template: don't have html pages: %s", err)
 	}
 
 	funcMap := template.FuncMap{
@@ -33,17 +39,14 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		"timestamp":      timestamp,
 		"readable_date":  readableDate,
 	}
+
 	for _, page := range pages {
 		full_name := filepath.Base(page)
 		name := strings.SplitN(full_name, ".", 2)[0]
 
-		t, err := template.New(name).Funcs(funcMap).ParseFiles("./ui/html/base.tmpl.html", page)
+		t, err := template.New(name).Funcs(funcMap).ParseFS(files, "base.*", "partials/*", page)
 		if err != nil {
-			return nil, fmt.Errorf("error when parsing template files: %s", err)
-		}
-		t, err = t.ParseGlob("./ui/html/partials/*tmpl.html")
-		if err != nil {
-			return nil, fmt.Errorf("error when parsing template files: %s", err)
+			return nil, fmt.Errorf("template: error when parsing template files: %s", err)
 		}
 
 		cache[name] = t

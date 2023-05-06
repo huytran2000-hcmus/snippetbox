@@ -14,6 +14,8 @@ func (app *Application) routes() http.Handler {
 	fileServer := http.FileServer(http.FS(ui.Files))
 	router.Handler(http.MethodGet, "/static/*filepath", fileServer)
 
+	router.HandlerFunc(http.MethodGet, "/ping", ping)
+
 	statefulMW := alice.New(app.sessionManager.LoadAndSave, CQRFPrevent, app.authenticate)
 	router.Handler(http.MethodGet, "/", statefulMW.ThenFunc(app.home))
 	router.Handler(http.MethodGet, "/snippet/view/:id", statefulMW.ThenFunc(app.snippetView))

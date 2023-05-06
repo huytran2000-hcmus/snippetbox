@@ -59,10 +59,14 @@ func splitNewLine(s string) []string {
 	return strings.Split(s, `\n`)
 }
 
-func timestamp(t *time.Time) string {
-	return t.Format("2006-01-02T15:04:05 -0700 MST")
+func timestamp(tm time.Time) string {
+	return tm.UTC().Format("2006-01-02T15:04:05 -0700 MST")
 }
 
-func readableDate(t *time.Time) string {
-	return t.Format("Monday, 02 Jan 2006 15:04:05")
+func readableDate(tm time.Time) string {
+	if tm.IsZero() {
+		return ""
+	}
+
+	return tm.UTC().Format("Monday, 02 Jan 2006 at 15:04:05")
 }

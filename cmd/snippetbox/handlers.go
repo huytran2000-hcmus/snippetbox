@@ -97,7 +97,7 @@ func (app *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	if !form.IsValid() {
 		data := app.newDefaultTemplateData(r)
 		data.Form = form
-		app.render(w, http.StatusBadRequest, "create", data)
+		app.render(w, http.StatusUnprocessableEntity, "create", data)
 		return
 	}
 
@@ -152,7 +152,7 @@ func (app *Application) userSignup(w http.ResponseWriter, r *http.Request) {
 	renderFormErrors := func() {
 		data := app.newDefaultTemplateData(r)
 		data.Form = &form
-		app.render(w, http.StatusBadRequest, "signup", data)
+		app.render(w, http.StatusUnprocessableEntity, "signup", data)
 	}
 
 	if !form.IsValid() {

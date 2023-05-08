@@ -54,15 +54,15 @@ func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 	})
 }
 
-func CQRFPrevent(next http.Handler) http.Handler {
-	cqrfHandler := nosurf.New(next)
-	cqrfHandler.SetBaseCookie(http.Cookie{
+func CSRFPrevent(next http.Handler) http.Handler {
+	csrfHandler := nosurf.New(next)
+	csrfHandler.SetBaseCookie(http.Cookie{
 		Path:     "/",
 		Secure:   true,
 		HttpOnly: true,
 	})
 
-	return cqrfHandler
+	return csrfHandler
 }
 
 func (app *Application) authenticate(next http.Handler) http.Handler {

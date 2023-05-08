@@ -16,7 +16,7 @@ func (app *Application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/ping", ping)
 
-	statefulMW := alice.New(app.sessionManager.LoadAndSave, CQRFPrevent, app.authenticate)
+	statefulMW := alice.New(app.sessionManager.LoadAndSave, CSRFPrevent, app.authenticate)
 	router.Handler(http.MethodGet, "/", statefulMW.ThenFunc(app.home))
 	router.Handler(http.MethodGet, "/snippet/view/:id", statefulMW.ThenFunc(app.snippetView))
 

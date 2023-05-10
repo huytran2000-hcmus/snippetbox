@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"testing"
@@ -165,4 +166,51 @@ func TestUserSignUp(t *testing.T) {
 			assert.StringContains(t, body, tt.formTag)
 		})
 	}
+}
+
+func TestSnippetCreate(t *testing.T) {
+	app := newTestApplication(t)
+	ts := newTestServer(t, app.routes())
+	defer ts.Close()
+
+	t.Run("Unauthenticated", func(t *testing.T) {
+		status, header, _ := ts.Get(t, "/snippet/create")
+
+		assert.Equal(t, status, http.StatusSeeOther)
+		assert.Equal(t, header.Get("Location"), "/user/login")
+	})
+
+	t.Run("Authenticated", func(t *testing.T) {
+		setupAuthencatedSession(t, ts, app, 1)
+		status, _, body := ts.Get(t, "/snippet/create")
+		assert.Equal(t, status, http.StatusOK)
+		assert.StringContains(t, body, "<form action='/snippet/create' method='POST'>")
+	})
+}
+
+func setupAuthencatedSession(t *testing.T, ts *testServer, app *Application, userID int) {
+	ctx := context.Background()
+	ctx, err := app.sessionManager.Load(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app.sessionManager.Put(ctx, userIDKey, userID)
+	token, expiry, err := app.sessionManager.Commit(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cookie := &http.Cookie{
+		Name:    app.sessionManager.Cookie.Name,
+		Value:   token,
+		Path:    app.sessionManager.Cookie.Path,
+		Expires: expiry,
+	}
+
+	srvUrl, err := url.Parse(ts.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts.Client().Jar.SetCookies(srvUrl, []*http.Cookie{cookie})
 }

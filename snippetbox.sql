@@ -11,7 +11,6 @@ CREATE TABLE snippets (
     expires TIMESTAMP NOT NULL
 );
 
--- Add an index on the created column.
 CREATE INDEX idx_snippets_created ON snippets(created);
 
 INSERT INTO snippets (title, content, created, expires) VALUES (

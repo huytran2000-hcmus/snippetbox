@@ -1,10 +1,29 @@
 package mock
 
 import (
+	"time"
+
 	"github.com/huytran2000-hcmus/snippetbox/internal/models"
 )
 
+var mockUser = &models.User{
+	ID:             1,
+	Name:           "alice",
+	Email:          "dupe@example.com",
+	HashedPassword: []byte{},
+	Created:        time.Date(2023, time.May, 10, 20, 0, 0, 0, time.UTC),
+}
+
 type StubUsers struct{}
+
+func (s *StubUsers) Get(id int) (*models.User, error) {
+	switch id {
+	case 1:
+		return mockUser, nil
+	default:
+		return nil, models.ErrNoRecord
+	}
+}
 
 func (s *StubUsers) Insert(name string, email string, password string) error {
 	switch email {

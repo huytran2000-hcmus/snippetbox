@@ -259,3 +259,22 @@ func (app *Application) about(w http.ResponseWriter, r *http.Request) {
 	data := app.newDefaultTemplateData(r)
 	app.render(w, http.StatusOK, "about", data)
 }
+
+func (app *Application) account(w http.ResponseWriter, r *http.Request) {
+	userID := app.sessionManager.GetInt(r.Context(), userIDKey)
+	user, err := app.users.Get(userID)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.errLog.Printf("account of user with id=%d is not existed", userID)
+			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+			return
+		}
+
+		app.serverError(w, err)
+		return
+	}
+
+	data := app.newDefaultTemplateData(r)
+	data.User = user
+	app.render(w, http.StatusOK, "account", data)
+}

@@ -15,6 +15,7 @@ import (
 type templateData struct {
 	Snippet         *models.Snippet
 	Snippets        []models.Snippet
+	User            *models.User
 	CurrentYear     int
 	Form            interface{}
 	FlashMessage    string

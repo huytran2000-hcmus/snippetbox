@@ -19,6 +19,7 @@ type User struct {
 }
 
 type Users interface {
+	Get(id int) (*User, error)
 	Insert(name string, email string, password string) error
 	Authenticate(email string, password string) (int, error)
 	Exists(id int) (bool, error)
@@ -26,6 +27,22 @@ type Users interface {
 
 type UserDB struct {
 	DB *sql.DB
+}
+
+func (db *UserDB) Get(id int) (*User, error) {
+	stmt := "SELECT name, email, created FROM users WHERE id = $1"
+
+	var user User
+	err := db.DB.QueryRow(stmt, id).Scan(&user.Name, &user.Email, &user.Created)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrNoRecord
+		}
+
+		return nil, fmt.Errorf("models: selecting a user: %s", err)
+	}
+
+	return &user, nil
 }
 
 func (db *UserDB) Insert(name string, email string, password string) error {

@@ -45,6 +45,7 @@ func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !app.isAuthenticated(r) {
 			app.sessionManager.Put(r.Context(), flashMessKey, "Please login first")
+			app.sessionManager.Put(r.Context(), redirectAfterLoginKey, r.URL.Path)
 			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 			return
 		}

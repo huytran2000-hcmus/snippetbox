@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	flashMessKey = "flash"
-	userIDKey    = "authenticatedUserID"
+	flashMessKey          = "flash"
+	userIDKey             = "authenticatedUserID"
+	redirectAfterLoginKey = "redirectAfterLogin"
 )
 
 type snippetCreateForm struct {
@@ -235,7 +236,14 @@ func (app *Application) userLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	app.sessionManager.Put(r.Context(), userIDKey, id)
 
-	http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
+	redirectPath := app.sessionManager.PopString(r.Context(), redirectAfterLoginKey)
+
+	if redirectPath == "" {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, redirectPath, http.StatusSeeOther)
 }
 
 func (app *Application) userLogout(w http.ResponseWriter, r *http.Request) {

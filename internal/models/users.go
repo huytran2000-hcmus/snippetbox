@@ -23,6 +23,7 @@ type Users interface {
 	Insert(name string, email string, password string) error
 	Authenticate(email string, password string) (int, error)
 	Exists(id int) (bool, error)
+	PasswordUpdate(id int, currentPassword string, newPassword string) error
 }
 
 type UserDB struct {
@@ -39,19 +40,17 @@ func (db *UserDB) Get(id int) (*User, error) {
 			return nil, ErrNoRecord
 		}
 
-		return nil, fmt.Errorf("models: selecting a user: %s", err)
+		return nil, fmt.Errorf("models: select a user: %s", err)
 	}
 
 	return &user, nil
 }
 
-func (db *UserDB) Insert(name string, email string, password string) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-	if err != nil {
-		if errors.Is(err, bcrypt.ErrPasswordTooLong) {
-			return ErrPasswordTooLong
-		}
+const passwordHashingCost = 12
 
+func (db *UserDB) Insert(name string, email string, password string) error {
+	hashedPassword, err := hashPassword(password)
+	if err != nil {
 		return err
 	}
 
@@ -65,7 +64,7 @@ func (db *UserDB) Insert(name string, email string, password string) error {
 			}
 		}
 
-		return fmt.Errorf("models: error when inserting a user: %s", err)
+		return fmt.Errorf("models: insert a user: %s", err)
 	}
 
 	return nil
@@ -82,15 +81,11 @@ func (db *UserDB) Authenticate(email string, password string) (int, error) {
 			return 0, ErrInvalidCredentials
 		}
 
-		return 0, fmt.Errorf("models: error when selecting a user: %s", err)
+		return 0, fmt.Errorf("models: select a user: %s", err)
 	}
 
-	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
+	err = compareHashedPassword(hashedPassword, []byte(password))
 	if err != nil {
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return 0, ErrInvalidCredentials
-		}
-
 		return 0, err
 	}
 
@@ -108,8 +103,66 @@ func (db *UserDB) Exists(id int) (bool, error) {
 			return false, ErrNoRecord
 		}
 
-		return false, fmt.Errorf("models: errors when selecting a user")
+		return false, fmt.Errorf("models: select an existing user: %s", err)
 	}
 
 	return exists, nil
+}
+
+func (db *UserDB) PasswordUpdate(id int, currentPassword string, newPassword string) error {
+	stmt := "SELECT hashed_password FROM users WHERE id = $1"
+
+	var hashedPassword []byte
+	err := db.DB.QueryRow(stmt, id).Scan(&hashedPassword)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNoRecord
+		}
+
+		return err
+	}
+
+	err = compareHashedPassword(hashedPassword, []byte(currentPassword))
+	if err != nil {
+		return err
+	}
+
+	hashedPassword, err = hashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
+	stmt = "UPDATE users SET hashed_password = $1 WHERE id = $2"
+	_, err = db.DB.Exec(stmt, hashedPassword, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func hashPassword(password string) ([]byte, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), passwordHashingCost)
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrPasswordTooLong) {
+			return nil, ErrPasswordTooLong
+		}
+
+		return nil, fmt.Errorf("models: hash password: %s", err)
+	}
+
+	return hashedPassword, nil
+}
+
+func compareHashedPassword(hashedPassword, password []byte) error {
+	err := bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return ErrInvalidCredentials
+		}
+
+		return fmt.Errorf("models: compare password to hashed password: %s", err)
+	}
+
+	return nil
 }

@@ -50,3 +50,15 @@ func (s *StubUsers) Exists(id int) (bool, error) {
 		return false, nil
 	}
 }
+
+func (s *StubUsers) PasswordUpdate(id int, currentPassword string, newPassword string) error {
+	if id == 1 {
+		if currentPassword != "pa$$word" {
+			return models.ErrInvalidCredentials
+		}
+
+		return nil
+	}
+
+	return models.ErrNoRecord
+}

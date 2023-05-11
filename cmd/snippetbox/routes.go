@@ -31,6 +31,8 @@ func (app *Application) routes() http.Handler {
 	router.Handler(http.MethodPost, "/snippet/create", protectedMW.ThenFunc(app.snippetCreate))
 	router.Handler(http.MethodPost, "/user/logout", protectedMW.ThenFunc(app.userLogout))
 	router.Handler(http.MethodGet, "/account/view", protectedMW.ThenFunc(app.account))
+	router.Handler(http.MethodGet, "/account/password/update", protectedMW.ThenFunc(app.accountPasswordUpdateForm))
+	router.Handler(http.MethodPost, "/account/password/update", protectedMW.ThenFunc(app.accountPasswordUpdate))
 
 	standardMW := alice.New(app.recoverFromPanic, app.logRequest, secureHeaders)
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -37,6 +37,13 @@ type userLoginForm struct {
 	Password            string `form:"password"`
 }
 
+type accountPasswordUpdateForm struct {
+	validator.Validator  `form:"-"`
+	CurrentPassword      string `form:"current_password"`
+	NewPassword          string `form:"new_password"`
+	ConfirmedNewPassword string `form:"confirmed_new_password"`
+}
+
 func (app *Application) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		app.notFound(w)
@@ -285,4 +292,72 @@ func (app *Application) account(w http.ResponseWriter, r *http.Request) {
 	data := app.newDefaultTemplateData(r)
 	data.User = user
 	app.render(w, http.StatusOK, "account", data)
+}
+
+func (app *Application) accountPasswordUpdateForm(w http.ResponseWriter, r *http.Request) {
+	data := app.newDefaultTemplateData(r)
+	data.Form = accountPasswordUpdateForm{}
+	app.render(w, http.StatusOK, "change_password", data)
+}
+
+func (app *Application) accountPasswordUpdate(w http.ResponseWriter, r *http.Request) {
+	var form accountPasswordUpdateForm
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+	}
+
+	currentPassword := form.CheckField("current_password", form.CurrentPassword).
+		NotBlank("This field can't be blank").
+		Value()
+	newPassword := form.CheckField("new_password", form.NewPassword).
+		NotBlank("This field can't be blank").
+		GE("This field must be at least 8 characters long", 8).
+		Value()
+	form.CheckField("confirmed_new_password", form.ConfirmedNewPassword).
+		NotBlank("This field can't be blank").
+		GE("This field must be at least 8 characters long", 8).
+		Equal("Confimed new password must be equal to new password", form.NewPassword).
+		Value()
+
+	renderFormErrors := func() {
+		data := app.newDefaultTemplateData(r)
+		data.Form = form
+		app.render(w, http.StatusUnprocessableEntity, "change_password", data)
+	}
+
+	if !form.IsValid() {
+		renderFormErrors()
+		return
+	}
+
+	id := app.sessionManager.GetInt(r.Context(), userIDKey)
+	err = app.users.PasswordUpdate(id, currentPassword, newPassword)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.errLog.Printf("account of user with id=%d is not found", id)
+			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+			return
+		}
+
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			form.AddFieldError("current_password", "Password is not correct")
+			renderFormErrors()
+			return
+		}
+
+		app.serverError(w, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), flashMessKey, "Your password has been updated. Please login again.")
+	app.sessionManager.Remove(r.Context(), userIDKey)
+
+	err = app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }

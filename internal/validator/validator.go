@@ -98,6 +98,14 @@ func (v *Validator) IsEmail(message string) *Validator {
 	return v.Matches(message, EmailRX)
 }
 
+func (v *Validator) Equal(message string, val string) *Validator {
+	if v.fieldValue != val {
+		v.addFieldError(message)
+	}
+
+	return v
+}
+
 func (v *Validator) addFieldError(message string) {
 	v.AddFieldError(v.fieldName, message)
 }

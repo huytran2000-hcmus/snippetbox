@@ -18,6 +18,7 @@ func (app *Application) routes() http.Handler {
 
 	statefulMW := alice.New(app.sessionManager.LoadAndSave, CSRFPrevent, app.authenticate)
 	router.Handler(http.MethodGet, "/", statefulMW.ThenFunc(app.home))
+	router.Handler(http.MethodGet, "/about", statefulMW.ThenFunc(app.about))
 	router.Handler(http.MethodGet, "/snippet/view/:id", statefulMW.ThenFunc(app.snippetView))
 
 	router.Handler(http.MethodGet, "/user/signup", statefulMW.ThenFunc(app.userSignupForm))

@@ -26,13 +26,16 @@ type Application struct {
 	templateCache  map[string]*template.Template
 	formDecoder    *form.Decoder
 	sessionManager *scs.SessionManager
+	debug          bool
 }
 
 func main() {
 	var addr string
 	var dsn string
+	var debug bool
 	flag.StringVar(&addr, "addr", ":4000", "HTTP network address")
 	flag.StringVar(&dsn, "dsn", "host=localhost port=5432 user=app_user password=huy2000 dbname=snippetbox sslmode=require search_path=app", "Postgresql datasource name")
+	flag.BoolVar(&debug, "debug", false, "Debug mode")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
@@ -67,6 +70,7 @@ func main() {
 		templateCache:  templates,
 		formDecoder:    formDecoder,
 		sessionManager: sessionManager,
+		debug:          debug,
 	}
 
 	tlsConfig := &tls.Config{

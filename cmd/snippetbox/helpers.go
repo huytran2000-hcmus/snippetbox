@@ -13,9 +13,13 @@ import (
 )
 
 func (app *Application) serverError(w http.ResponseWriter, err error) {
-	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
-	app.errLog.Output(2, trace)
+	stackStrace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
+	app.errLog.Output(2, stackStrace)
 
+	if app.debug {
+		http.Error(w, stackStrace, http.StatusInternalServerError)
+		return
+	}
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
